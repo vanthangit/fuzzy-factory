@@ -35,27 +35,26 @@ thành quyết định kinh doanh.
         ▲                              ▲                                      ▲
         │                              │                                      │
         └──────── extract_load >> dbt_models (Cosmos TaskGroup) >> dbt_docs ──┘
-                       (chay tren airflow-worker qua Celery)
+                       (chay tren airflow-scheduler qua LocalExecutor)
 
-┌────────────────────────────── Airflow (CeleryExecutor) ──────────────────────────────┐
-│  airflow-webserver (UI)   airflow-scheduler   airflow-worker   airflow-triggerer      │
-│         │                        │                   │                │              │
-│         └──────────────── airflow-postgres (metadata riêng) ──────────┘              │
-│                                   │                                                    │
-│                                redis (broker)                                          │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────── Airflow (LocalExecutor) ────────────────────┐
+│        airflow-webserver (UI)     airflow-scheduler              │
+│               │                          │ (tu chay task local)  │
+│               └──── airflow-postgres (metadata riêng) ───────────┘
+└────────────────────────────────────────────────────────────────┘
 ```
 
-Toàn bộ chạy qua `docker-compose`. Airflow dùng đúng kiến trúc tham chiếu
-chính thức cho self-hosted production (`CeleryExecutor`): webserver,
-scheduler, worker và triggerer là 4 container tách biệt, dùng chung 1
-Postgres metadata riêng (`airflow-postgres` — không lẫn với `postgres`
-chứa data nghiệp vụ) và Redis làm broker. `airflow-init` là container
-chạy 1 lần lúc khởi tạo (migrate schema + tạo admin user), tự thoát sau
-khi xong. Nhờ metadata nằm trên Postgres thật (không phải SQLite gắn
-trong 1 container), lịch sử DAG run, task logs, và tài khoản đăng nhập
-đều sống sót qua mọi lần `docker-compose down`/`up` hay rebuild — chỉ mất
-khi chủ động xoá volume (`docker-compose down -v`).
+Toàn bộ chạy qua `docker-compose`. Airflow dùng `LocalExecutor` — scheduler
+tự thực thi task bằng subprocess nội bộ, không cần broker hay container
+worker riêng (Redis/Celery bị bỏ hẳn vì dataset tĩnh, không có tải thật
+cần scale ra nhiều worker). Webserver + scheduler dùng chung 1 Postgres
+metadata riêng (`airflow-postgres` — không lẫn với `postgres` chứa data
+nghiệp vụ). `airflow-init` là container chạy 1 lần lúc khởi tạo (migrate
+schema + tạo admin user + tạo Airflow Pool), tự thoát sau khi xong. Nhờ
+metadata nằm trên Postgres thật (không phải SQLite gắn trong 1 container),
+lịch sử DAG run, task logs, và tài khoản đăng nhập đều sống sót qua mọi
+lần `docker-compose down`/`up` hay rebuild — chỉ mất khi chủ động xoá
+volume (`docker-compose down -v`).
 
 ### Data model (star schema)
 
@@ -72,7 +71,7 @@ khi chủ động xoá volume (`docker-compose down -v`).
 | Nguồn dữ liệu | Postgres | CSV / dbt seed | Mô phỏng đúng OLTP production thật; `seed` chỉ dành cho bảng lookup nhỏ, không phải fact data |
 | Warehouse | DuckDB | BigQuery | Reproducible với `docker-compose up`, không cần billing/service account cloud; BigQuery đã có ở project khác trong portfolio |
 | Extract-Load | DuckDB `postgres` extension (`ATTACH ... TYPE postgres`) snapshot vào schema `raw` | dbt đọc thẳng Postgres lúc transform | Đúng hành vi 1 EL tool thật (Fivetran/Airbyte) — transform chạy trên snapshot, không phụ thuộc kết nối OLTP đang sống |
-| Orchestration | Airflow `CeleryExecutor` — webserver/scheduler/worker/triggerer tách container riêng, Postgres metadata riêng + Redis broker | `standalone` mode (SQLite + SequentialExecutor) | Kiến trúc tham chiếu chính thức của Airflow cho self-hosted production; SQLite không hỗ trợ ghi đồng thời và không sống sót qua container recreate — không phù hợp để giữ lịch sử DAG run thật |
+| Orchestration | Airflow `LocalExecutor` — webserver + scheduler tách container, Postgres metadata riêng | `standalone` (SQLite) hoặc `CeleryExecutor` (Redis + worker riêng) | SQLite không sống sót qua container recreate. CeleryExecutor/Redis được thử trước nhưng dư thừa cho dataset tĩnh, không tải thật — không có nhu cầu scale ra nhiều worker. `LocalExecutor` + Postgres metadata giữ được tính bền vững (lịch sử DAG run) mà không cần thêm broker |
 | Schedule | `schedule=None`, trigger thủ công | Cron thật | Dataset là lịch sử tĩnh, không có data mới — đặt cron giả sẽ là "orchestration theater" |
 | Cấu trúc dbt models | Staging nhóm theo **source system** (`staging/fuzzyfactory/`), marts/intermediate nhóm theo **domain nghiệp vụ** (`marts/marketing/`) | Để phẳng 1 cấp | Đúng convention chính thức của dbt Labs — staging phản ánh hệ thống nguồn (dễ mở rộng thêm nguồn mới sau này), marts phản ánh cách stakeholder thật sự tiêu thụ data |
 | DAG orchestration cho dbt | **Astronomer Cosmos** — mỗi model là 1 Task Group riêng (`run` + `test`), dependency đọc thẳng từ manifest dbt | 1 task lớn `dbt run` + 1 task lớn `dbt test` | Thấy rõ model nào fail thay vì cả `dbt run` fail chung chung; dependency không bị khai báo trùng 2 nơi (dbt và Airflow) nên không lệch khi model thay đổi |
@@ -119,9 +118,9 @@ Hai lớp test chạy qua `dbt test` (bước 3 trong DAG, sau `dbt run`, trư�
 
 ```
 fuzzy-factory-e2e/
-├── docker-compose.yml               # postgres, airflow-postgres, redis,
-│                                     # airflow-init/webserver/scheduler/
-│                                     # worker/triggerer, dbt-docs
+├── docker-compose.yml               # postgres, airflow-postgres,
+│                                     # airflow-init/webserver/scheduler,
+│                                     # dbt-docs
 ├── .env / .env.example              # credential + secret (.env gitignored)
 ├── .gitignore                       # chan CSV + warehouse.duckdb + .env khoi git
 ├── data/raw_csv/                    # CSV goc (gitignored)

@@ -3,10 +3,8 @@ x-airflow-common:
   build: ./airflow
   environment:
     &airflow-common-env
-    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}
-    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}
-    AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
     AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY}
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
@@ -25,8 +23,6 @@ x-airflow-common:
     - airflow_logs:/opt/airflow/logs
   depends_on:
     &airflow-common-depends-on
-    redis:
-      condition: service_healthy
     airflow-postgres:
       condition: service_healthy
     postgres:
@@ -60,13 +56,6 @@ services:
       - airflow_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${AIRFLOW_DB_USER:-airflow}"]
-      interval: 5s
-      retries: 10
-
-  redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       retries: 10
 
@@ -109,22 +98,6 @@ services:
   airflow-scheduler:
     <<: *airflow-common
     command: scheduler
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-worker:
-    <<: *airflow-common
-    command: celery worker
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-triggerer:
-    <<: *airflow-common
-    command: triggerer
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
