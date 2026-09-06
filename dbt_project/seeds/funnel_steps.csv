@@ -1,0 +1,8 @@
+step_number,step_name,url_pattern
+1,home_or_lander,/
+2,product_page,/products
+2,product_page,/the-
+3,cart,/cart
+4,shipping,/shipping
+5,billing,/billing
+6,thank_you,/thank-you

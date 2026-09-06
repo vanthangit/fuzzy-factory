@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: fct_order_items
+    description: 1 dong = 1 dong san pham trong don hang, dung de join voi fct_refunds phan tich refund-risk.
+    columns:
+      - name: order_item_id
+        description: Khoa chinh, grain cua bang.
+        data_tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: Don hang chua dong san pham nay.
+        data_tests:
+          - relationships:
+              to: ref('fct_orders')
+              field: order_id

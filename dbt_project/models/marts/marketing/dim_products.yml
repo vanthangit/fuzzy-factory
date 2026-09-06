@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: dim_products
+    description: Dimension san pham.
+    columns:
+      - name: product_id
+        description: Khoa chinh.
+        data_tests:
+          - unique
+          - not_null

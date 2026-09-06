@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: stg_fuzzyfactory__website_sessions
+    description: 1 dong = 1 luot truy cap website (session), gan voi kenh marketing (utm_*).
+    columns:
+      - name: website_session_id
+        description: Khoa chinh cua session.
+        data_tests:
+          - unique
+          - not_null

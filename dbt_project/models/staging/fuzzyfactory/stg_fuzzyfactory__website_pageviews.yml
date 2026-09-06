@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: stg_fuzzyfactory__website_pageviews
+    description: 1 dong = 1 luot xem trang, thuoc ve 1 session.
+    columns:
+      - name: website_pageview_id
+        description: Khoa chinh cua pageview.
+        data_tests:
+          - unique
+          - not_null
+      - name: website_session_id
+        description: Khoa ngoai toi website_sessions.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_fuzzyfactory__website_sessions')
+              field: website_session_id

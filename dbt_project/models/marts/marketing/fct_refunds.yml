@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: fct_refunds
+    description: 1 dong = 1 lan hoan tien.
+    columns:
+      - name: order_item_refund_id
+        description: Khoa chinh, grain cua bang.
+        data_tests:
+          - unique
+          - not_null
+      - name: order_item_id
+        description: Dong san pham duoc hoan tien.
+        data_tests:
+          - relationships:
+              to: ref('fct_order_items')
+              field: order_item_id

@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: stg_fuzzyfactory__products
+    description: 1 dong = 1 san pham dang ban.
+    columns:
+      - name: product_id
+        description: Khoa chinh cua san pham.
+        data_tests:
+          - unique
+          - not_null

@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: stg_fuzzyfactory__order_item_refunds
+    description: 1 dong = 1 lan hoan tien cho 1 order item.
+    columns:
+      - name: order_item_refund_id
+        description: Khoa chinh cua lan hoan tien.
+        data_tests:
+          - unique
+          - not_null
+      - name: order_item_id
+        description: Khoa ngoai toi order_items (dong san pham duoc hoan tien).
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_fuzzyfactory__order_items')
+              field: order_item_id

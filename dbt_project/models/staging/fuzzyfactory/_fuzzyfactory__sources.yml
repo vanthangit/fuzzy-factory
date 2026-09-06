@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: >
+      Snapshot cua cac bang OLTP tu Postgres, duoc load boi
+      airflow/scripts/extract_load.py truoc moi lan dbt chay.
+    tables:
+      - name: website_sessions
+      - name: website_pageviews
+      - name: products
+      - name: orders
+      - name: order_items
+      - name: order_item_refunds

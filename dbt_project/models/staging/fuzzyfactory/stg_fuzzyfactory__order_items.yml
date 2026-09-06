@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: stg_fuzzyfactory__order_items
+    description: 1 dong = 1 dong san pham trong 1 don hang (1 don co the co nhieu dong).
+    columns:
+      - name: order_item_id
+        description: Khoa chinh cua order item.
+        data_tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: Khoa ngoai toi orders.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_fuzzyfactory__orders')
+              field: order_id
+      - name: product_id
+        description: Khoa ngoai toi products.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_fuzzyfactory__products')
+              field: product_id

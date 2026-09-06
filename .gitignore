@@ -1,0 +1,41 @@
+# --- Du lieu that (KHONG duoc push len git) ---
+# CSV goc la course material cua Maven Analytics, khong duoc redistribute.
+data/raw_csv/*.csv
+
+# warehouse.duckdb la ban sao toan bo du lieu tren (raw + staging + marts).
+# Neu khong ignore file nay thi ignore CSV o tren vo nghia - data van bi
+# leak nguyen ven qua file .duckdb.
+warehouse/*.duckdb
+warehouse/*.duckdb.wal
+
+# --- Secrets / credentials ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*.json
+
+# --- dbt build artifacts ---
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+dbt_project/.user.yml
+
+# --- Airflow runtime ---
+airflow/logs/
+airflow/airflow.db
+airflow/airflow-webserver.pid
+airflow/dags/__pycache__/
+
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Editor / OS ---
+.vscode/
+.claude/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: fct_sessions
+    description: 1 dong = 1 session, da gan landing/exit page va co chuyen doi (order) hay khong.
+    columns:
+      - name: website_session_id
+        description: Khoa chinh, grain cua bang.
+        data_tests:
+          - unique
+          - not_null

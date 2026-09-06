@@ -1,0 +1,16 @@
+version: 2
+
+seeds:
+  - name: funnel_steps
+    description: >
+      Bang tra cuu tinh, tu maintain: map tien to cua pageview_url sang
+      buoc funnel (dung trong analyses/landing_page_funnel_dropoff.sql).
+      Moi pageview duoc gan step_number lon nhat trong so cac pattern
+      khop tien to voi url cua no.
+    columns:
+      - name: step_number
+        description: Thu tu buoc trong funnel (1 = som nhat, 6 = thank-you).
+      - name: step_name
+        description: Ten hien thi cua buoc.
+      - name: url_pattern
+        description: Tien to url dung de match (LIKE url_pattern || '%').

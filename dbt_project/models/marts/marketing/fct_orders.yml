@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: 1 dong = 1 don hang, da gan kenh marketing tu session goc.
+    columns:
+      - name: order_id
+        description: Khoa chinh, grain cua bang.
+        data_tests:
+          - unique
+          - not_null
+      - name: website_session_id
+        description: Session da tao ra don hang nay.
+        data_tests:
+          - relationships:
+              to: ref('fct_sessions')
+              field: website_session_id

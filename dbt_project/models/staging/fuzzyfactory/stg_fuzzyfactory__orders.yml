@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: stg_fuzzyfactory__orders
+    description: 1 dong = 1 don hang, gan voi session da tao ra don do.
+    columns:
+      - name: order_id
+        description: Khoa chinh cua don hang.
+        data_tests:
+          - unique
+          - not_null
+      - name: website_session_id
+        description: Khoa ngoai toi website_sessions (session dan den don hang).
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_fuzzyfactory__website_sessions')
+              field: website_session_id
+      - name: primary_product_id
+        description: Khoa ngoai toi products (san pham chinh trong don).
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_fuzzyfactory__products')
+              field: product_id
