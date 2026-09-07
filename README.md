@@ -33,21 +33,23 @@ thành quyết định kinh doanh.
 
 ## Kiến trúc
 
-```
-┌─────────────┐   dbt-duckdb    ┌──────────────┐  Cosmos: 1 model = 1  ┌─────────────┐
-│  Postgres   │  postgres ext.  │   DuckDB     │  Task Group (run+test)│  dbt marts  │
-│  (OLTP src) │ ───────────────▶│ raw schema   │──────────────────────▶│ star schema │
-└─────────────┘  extract_load   └──────────────┘                       └─────────────┘
-        ▲                              ▲                                      ▲
-        │                              │                                      │
-        └──────── extract_load >> dbt_models (Cosmos TaskGroup) >> dbt_docs ──┘
-                       (chay tren airflow-scheduler qua LocalExecutor)
+```mermaid
+flowchart TB
+    PG[("Postgres<br/>OLTP source")] -->|"extract_load.py<br/>(postgres extension)"| RAW[("DuckDB<br/>raw schema")]
+    RAW -->|"Cosmos: 1 model = 1 Task Group<br/>(run + test)"| MART[("dbt marts<br/>star schema")]
 
-┌──────────────────── Airflow (LocalExecutor) ────────────────────┐
-│        airflow-webserver (UI)     airflow-scheduler              │
-│               │                          │ (tu chay task local)  │
-│               └──── airflow-postgres (metadata riêng) ───────────┘
-└────────────────────────────────────────────────────────────────┘
+    subgraph AF["Airflow (LocalExecutor)"]
+        direction LR
+        WEB["airflow-webserver<br/>(UI)"]
+        SCHED["airflow-scheduler<br/>(tự chạy task cục bộ)"]
+        META[("airflow-postgres<br/>metadata riêng")]
+        WEB --- META
+        SCHED --- META
+    end
+
+    SCHED -. "extract_load ▸ dbt_models (Cosmos) ▸ dbt_docs" .-> PG
+    SCHED -.-> RAW
+    SCHED -.-> MART
 ```
 
 Toàn bộ chạy qua `docker-compose`. Airflow dùng `LocalExecutor` — scheduler
