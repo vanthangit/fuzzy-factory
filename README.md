@@ -13,6 +13,8 @@ Mục tiêu không phải 1 dashboard đẹp — mà là bằng chứng: ngườ
 warehouse từ OLTP thô cũng chính là người viết được SQL biến warehouse đó
 thành quyết định kinh doanh.
 
+![Kiến trúc ELT](imgs/kien_truc_elt.png)
+
 ## 5 câu hỏi kinh doanh đã trả lời (kèm impact thật, tính từ data)
 
 | # | Câu hỏi | Kỹ thuật SQL | Insight thật + impact ước tính |
@@ -24,6 +26,10 @@ thành quyết định kinh doanh.
 | 5 | Sản phẩm mua đầu tiên nào dự báo LTV cao nhất? | Cohort theo sản phẩm mua đầu + `LAG`/`LEAD` đo thời gian quay lại mua tiếp | Khách bắt đầu bằng **The Forever Love Bear** có LTV trung bình **$67.43**, cao hơn **$31.96** so với nhóm bắt đầu bằng **The Hudson River Mini bear** ($35.47) — thấp nhất. Dịch chuyển ngân sách marketing ưu tiên sản phẩm "cửa ngõ" tốt hơn cho khách mới là cơ hội trực tiếp tăng LTV trung bình toàn cohort. |
 
 *(Cách tính impact chi tiết, kèm giả định, nằm trong comment ở cuối mỗi file `analyses/*.sql`.)*
+
+**Kết quả thật từ câu hỏi #2** (`analyses/landing_page_funnel_dropoff.sql`, chạy trực tiếp trên `warehouse.duckdb`):
+
+![Kết quả funnel drop-off](imgs/landing_page_funnel_dropoff.png)
 
 ## Kiến trúc
 
@@ -55,6 +61,16 @@ metadata nằm trên Postgres thật (không phải SQLite gắn trong 1 contain
 lịch sử DAG run, task logs, và tài khoản đăng nhập đều sống sót qua mọi
 lần `docker-compose down`/`up` hay rebuild — chỉ mất khi chủ động xoá
 volume (`docker-compose down -v`).
+
+**DAG thật chạy trên Airflow** — mỗi model dbt là 1 Task Group riêng (`run`
++ `test`) do Cosmos tự sinh từ manifest, toàn bộ `success`:
+
+![Airflow DAG chạy thành công](imgs/DAGs.png)
+
+**Lineage graph từ dbt docs** — toàn bộ dependency từ `raw` → staging →
+marts → tests → analyses:
+
+![dbt lineage graph](imgs/dbt_lineage_graph.png)
 
 ### Data model (star schema)
 
@@ -113,6 +129,8 @@ Hai lớp test chạy qua `dbt test` (bước 3 trong DAG, sau `dbt run`, trư�
   - `assert_session_has_landing_page` — không có session rỗng (lỗi tracking)
 
 **Kết quả trên data thật** (472,871 session · 1,188,124 pageview · 32,313 đơn · 40,025 order item · 1,731 lượt hoàn tiền): `dbt build` → 13 model + 1 seed + 42 test → **PASS=56, ERROR=0**.
+
+![dbt build PASS=56](imgs/dbt_build_pass.png)
 
 ## Cấu trúc repo
 
